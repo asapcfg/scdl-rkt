@@ -1,0 +1,6 @@
+- [x] main.rkt
+- [x] core.rkt
+- [ ] main.rkt: change default name to song title
+- [ ] core.rkt: add downloading from playlists/sets
+- [ ] core.rkt: add author and song photo
+- [ ] sbcl-rkt: create package in some distributives
