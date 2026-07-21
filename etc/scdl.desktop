@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=scdl
+Comment=SoundCloud Downloader
+Exec=/usr/local/bin/scdl
+Terminal=true
+StartupNotify=true
+Categories=Utility;Development;Network;
