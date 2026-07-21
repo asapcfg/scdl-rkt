@@ -12,6 +12,7 @@
 		       "output file path (default: ./song.mp3)"
 		       (output-path path)]
     [("-v" "--version")
+	"show version of sdcl"
      	(displayln "sdcl-rkt/1.0.0 by asapcfg")]
     #:args (url)
     url))
