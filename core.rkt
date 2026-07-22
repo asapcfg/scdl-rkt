@@ -57,6 +57,20 @@
   (findf (lambda (t) (string=? (tc t) "hls")) transcodings)
   (error 'final "no hls/progressive transcodings :(")))
 
+; 1.1.0 title support
+(define (mimeo transcodings)
+  (hash-ref (hash-ref transcodings 'format) 'mime-type ""))
+(define (mimext mime)
+  (cond
+    [(regexp-match? #px"mp4" mime) "m4a"]
+    [(regexp-match? #px"mpeg" mime) "mp3"]
+    [(regexp-match? #px"ogg" mime) "ogg"]
+    [else "mp3"]))
+(define (sanitar name)
+  (string-trim (regexp-replace* #px"[/\\\\:*?\"<>|]" name "_")))
+(define (defname title mime)
+  (string-append (sanitar title) "." (mimext mime)))
+
 (define (gsu transcoding client-id) ; gsu - get stream url (c) asapcfg
   (define meta-url (hash-ref transcoding 'url))
   (define full-url (string-append meta-url "?client_id=" client-id))
@@ -92,6 +106,7 @@
 	(define transcoding (final (getaux song-json)))
 	(define protocol (tc transcoding))
 	(printf "trancoding: ~a\n" protocol)
+	(define  out-path (defname title (mimeo transcoding)))
 	
 	(define stream-url (gsu transcoding client-id))
 	(cond
