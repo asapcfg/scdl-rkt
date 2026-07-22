@@ -5,7 +5,9 @@
 	 json
 	 racket/port
 	 racket/system
-	 racket/format)
+	 racket/format
+	 racket/string
+	 racket/file)
 
 (provide download-song)
 
@@ -24,6 +26,8 @@
   (close-input-port in)
   data)
 
+
+
 (define (fci) ;; fci - find client ID. (c) asapcfg
   (define html (http-get-string "https://soundcloud.com"))
   (define fci-su ;; fci-su - fci script urls
@@ -40,6 +44,34 @@
 	(if m
 	  (cadr m)
 	  (loop (cdr urls)))])))
+;; caching FCI (adds performance)
+(define (config-dir)
+  (build-path (find-system-path 'home-dir) ".config" "scdl-rkt"))
+(define (client-id-file)
+  (build-path (config-dir) "client-id"))
+(define (rcci) ;; rcci - read cached client id (c) asapcfg
+  (define path (client-id-file))
+  (if (file-exists? path)
+    (string-trim (call-with-input-file path port->string))
+    #f))
+(define (save-ci! id)
+  (define dir (config-dir))
+  (define file (client-id-file))
+  (printf "caching client-id in ~a\n" file)
+  (make-directory* dir)
+  ;; temporarily
+  (printf "folder exists: ~a\n" (directory-exists? dir))
+  (call-with-output-file (client-id-file)
+			 (lambda (out) (write-string id out))
+			 #:exists 'replace)
+  (printf "file exists: ~a\n" (file-exists? file))
+  id)
+(define (fetch-ci!)
+  (save-ci! (fci)))
+(define (get-ci)
+  (or (rcci) (fetch-ci!)))
+
+
 (define (resolver song-url client-id)
   (define api-url
     (string-append
@@ -47,6 +79,17 @@
       (uri-encode song-url)
       "&client_id=" client-id))
   (string->jsexpr (http-get-string api-url)))
+(define (resolver/retryable song-url)
+  (define cached-id (get-ci))
+  (with-handlers
+    ([exn:fail?
+       (lambda (e)
+	 (printf "updating client-id\n"
+		 (exn-message e))
+	 (define fresh-id (fetch-ci!))
+	 (values (resolver song-url fresh-id) fresh-id))])
+    (values (resolver song-url cached-id) cached-id)))
+
 (define (getaux song-json)
   (define media (hash-ref song-json 'media))
   (hash-ref media 'transcodings))
@@ -95,11 +138,8 @@
     (error 'dl-hls "ffmpeg eror")))
 
 (define (download-song song-url out-path)
-	(printf "starting fci...\n")
-	(define client-id (fci))
-
 	(printf "searching song...\n")
-	(define song-json (resolver song-url client-id))
+	(define-values (song-json client-id) (resolver/retryable song-url))
 	(define title (hash-ref song-json 'title "(no name)"))
 	(printf "song: ~a\n" title)
 	

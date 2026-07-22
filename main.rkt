@@ -13,7 +13,7 @@
 		       (output-path path)]
     [("-v" "--version")
 	"show version of sdcl"
-     	(displayln "sdcl-rkt/1.1.0 by asapcfg")
+     	(displayln "sdcl-rkt/1.2.0 by asapcfg")
 	(exit 0)]
     #:args (url)
     url))
